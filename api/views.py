@@ -9,6 +9,7 @@ from .serializers import (
     DoctorAnnotationSerializer, DoctorNotificationSerializer
 )
 from rest_framework.permissions import AllowAny
+from rest_framework import serializers
 
 # Create your views here.
 
@@ -110,7 +111,28 @@ class HealthRecordViewSet(viewsets.ModelViewSet):
         return HealthRecord.objects.none()
 
     def perform_create(self, serializer):
-        serializer.save(patient=self.request.user.patient)
+        user = self.request.user
+        if hasattr(user, 'doctor'):
+            # If user is a doctor, get patient from request data
+            patient_id = self.request.data.get('patient')
+            if not patient_id:
+                raise serializers.ValidationError({"patient": "Patient ID is required for doctors"})
+            
+            try:
+                patient = Patient.objects.get(id=patient_id)
+            except Patient.DoesNotExist:
+                raise serializers.ValidationError({"patient": f"Patient with ID {patient_id} does not exist"})
+            
+            # Verify doctor has access to this patient
+            if patient not in user.doctor.patients.all():
+                raise permissions.PermissionDenied("You don't have permission to create records for this patient")
+            
+            serializer.save(patient=patient)
+        elif hasattr(user, 'patient'):
+            # If user is a patient, use their own patient record
+            serializer.save(patient=user.patient)
+        else:
+            raise permissions.PermissionDenied("You don't have permission to create health records")
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
