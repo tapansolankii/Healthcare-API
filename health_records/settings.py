@@ -29,7 +29,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-5wv72^(_rcjifs-q__2u*
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 # ALLOWED_HOSTS = ['*']  # Update this with your Render domain
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.render.com').split(',')
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.railway.app', 'healthcheck.railway.app']
 
 
 # Application definition
