@@ -32,6 +32,13 @@ class DoctorViewSet(viewsets.ModelViewSet):
         serializer = DoctorNotificationSerializer(notifications, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'])
+    def all_notifications(self, request, pk=None):
+        doctor = self.get_object()
+        notifications = doctor.notifications.all().order_by('-created_at')
+        serializer = DoctorNotificationSerializer(notifications, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['post'])
     def mark_notification_read(self, request, pk=None):
         notification_id = request.data.get('notification_id')

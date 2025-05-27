@@ -25,6 +25,22 @@ class DoctorSerializer(serializers.ModelSerializer):
         doctor = Doctor.objects.create(user=user, **validated_data)
         return doctor
 
+    def update(self, instance, validated_data):
+        if 'user' in validated_data:
+            user_data = validated_data.pop('user')
+            user = instance.user
+            for attr, value in user_data.items():
+                if attr == 'password':
+                    user.set_password(value)
+                else:
+                    setattr(user, attr, value)
+            user.save()
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
 class PatientSerializer(serializers.ModelSerializer):
     user = UserSerializer()
     
@@ -39,6 +55,25 @@ class PatientSerializer(serializers.ModelSerializer):
         patient = Patient.objects.create(user=user, **validated_data)
         patient.assigned_doctors.set(assigned_doctors)
         return patient
+
+    def update(self, instance, validated_data):
+        if 'user' in validated_data:
+            user_data = validated_data.pop('user')
+            user = instance.user
+            for attr, value in user_data.items():
+                if attr == 'password':
+                    user.set_password(value)
+                else:
+                    setattr(user, attr, value)
+            user.save()
+        
+        if 'assigned_doctors' in validated_data:
+            instance.assigned_doctors.set(validated_data.pop('assigned_doctors'))
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
 class HealthRecordSerializer(serializers.ModelSerializer):
     class Meta:
