@@ -3,9 +3,9 @@ builder = "nixpacks"
 buildCommand = "pip install -r requirements.txt"
 
 [deploy]
-startCommand = "python manage.py migrate && python manage.py create_superuser_if_not_exists && python manage.py runserver 0.0.0.0:$PORT"
-healthcheckPath = "/"
-healthcheckTimeout = 100
+startCommand = "python manage.py migrate && python manage.py create_superuser_if_not_exists && gunicorn health_records.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+healthcheckPath = "/api/health/"
+healthcheckTimeout = 180
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 

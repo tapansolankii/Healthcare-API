@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .models import Doctor, Patient, HealthRecord, DoctorAnnotation, DoctorNotification
@@ -110,3 +110,7 @@ class HealthRecordViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(patient=self.request.user.patient)
+
+@api_view(['GET'])
+def health_check(request):
+    return Response({"status": "healthy"}, status=status.HTTP_200_OK)
