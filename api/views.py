@@ -113,4 +113,4 @@ class HealthRecordViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET'])
 def health_check(request):
-    return Response({"status": "healthy"}, status=status.HTTP_200_OK)
+    return Response({"status": "ok"}, status=status.HTTP_200_OK)
