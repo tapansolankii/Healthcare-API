@@ -64,17 +64,24 @@ class DoctorViewSet(viewsets.ModelViewSet):
 class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer):
-        patient = serializer.save()
-        # Create notifications for assigned doctors
-        for doctor in patient.assigned_doctors.all():
-            DoctorNotification.objects.create(
-                doctor=doctor,
-                patient=patient,
-                is_new_patient=True
-            )
+        try:
+            patient = serializer.save()
+            # Create notifications for assigned doctors
+            for doctor in patient.assigned_doctors.all():
+                DoctorNotification.objects.create(
+                    doctor=doctor,
+                    patient=patient,
+                    is_new_patient=True
+                )
+        except Exception as e:
+            raise serializers.ValidationError(str(e))
 
     def get_queryset(self):
         user = self.request.user
