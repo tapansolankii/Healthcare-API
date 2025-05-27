@@ -1,1 +1,1 @@
-web: gunicorn health_records.wsgi --log-file - 
+web: python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py create_superuser_if_not_exists && gunicorn health_records.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 
