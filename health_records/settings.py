@@ -26,10 +26,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-5wv72^(_rcjifs-q__2u*gt72bk1l05bw=xo7ds*&q*vb&hrzf')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 # ALLOWED_HOSTS = ['*']  # Update this with your Render domain
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '.render.com').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.render.com').split(',')
 
 
 # Application definition
@@ -85,7 +85,7 @@ WSGI_APPLICATION = "health_records.wsgi.application"
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+        default='sqlite:///db.sqlite3',
         conn_max_age=600,
         conn_health_checks=True,
     )
