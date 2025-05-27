@@ -110,29 +110,54 @@ class HealthRecordViewSet(viewsets.ModelViewSet):
             return HealthRecord.objects.filter(patient__in=user.doctor.patients.all())
         return HealthRecord.objects.none()
 
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except Exception as e:
+            return Response(
+                {
+                    "error": str(e),
+                    "detail": "An error occurred while creating the health record",
+                    "user_id": request.user.id,
+                    "user_type": "doctor" if hasattr(request.user, 'doctor') else "patient" if hasattr(request.user, 'patient') else "unknown",
+                    "request_data": request.data
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     def perform_create(self, serializer):
-        user = self.request.user
-        if hasattr(user, 'doctor'):
-            # If user is a doctor, get patient from request data
-            patient_id = self.request.data.get('patient')
-            if not patient_id:
-                raise serializers.ValidationError({"patient": "Patient ID is required for doctors"})
-            
-            try:
-                patient = Patient.objects.get(id=patient_id)
-            except Patient.DoesNotExist:
-                raise serializers.ValidationError({"patient": f"Patient with ID {patient_id} does not exist"})
-            
-            # Verify doctor has access to this patient
-            if patient not in user.doctor.patients.all():
-                raise permissions.PermissionDenied("You don't have permission to create records for this patient")
-            
-            serializer.save(patient=patient)
-        elif hasattr(user, 'patient'):
-            # If user is a patient, use their own patient record
-            serializer.save(patient=user.patient)
-        else:
-            raise permissions.PermissionDenied("You don't have permission to create health records")
+        try:
+            user = self.request.user
+            if hasattr(user, 'doctor'):
+                # If user is a doctor, get patient from request data
+                patient_id = self.request.data.get('patient')
+                if not patient_id:
+                    raise serializers.ValidationError({"patient": "Patient ID is required for doctors"})
+                
+                try:
+                    patient = Patient.objects.get(id=patient_id)
+                except Patient.DoesNotExist:
+                    raise serializers.ValidationError({"patient": f"Patient with ID {patient_id} does not exist"})
+                
+                # Verify doctor has access to this patient
+                if patient not in user.doctor.patients.all():
+                    raise permissions.PermissionDenied(
+                        f"You don't have permission to create records for this patient. "
+                        f"Your patients are: {list(user.doctor.patients.values_list('id', flat=True))}"
+                    )
+                
+                serializer.save(patient=patient)
+            elif hasattr(user, 'patient'):
+                # If user is a patient, use their own patient record
+                serializer.save(patient=user.patient)
+            else:
+                raise permissions.PermissionDenied("You don't have permission to create health records")
+        except Exception as e:
+            raise serializers.ValidationError({
+                "error": str(e),
+                "user_id": user.id,
+                "user_type": "doctor" if hasattr(user, 'doctor') else "patient" if hasattr(user, 'patient') else "unknown"
+            })
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
