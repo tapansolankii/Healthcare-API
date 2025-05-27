@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .models import Doctor, Patient, HealthRecord, DoctorAnnotation, DoctorNotification
@@ -8,6 +8,7 @@ from .serializers import (
     DoctorSerializer, PatientSerializer, HealthRecordSerializer,
     DoctorAnnotationSerializer, DoctorNotificationSerializer
 )
+from rest_framework.permissions import AllowAny
 
 # Create your views here.
 
@@ -112,5 +113,6 @@ class HealthRecordViewSet(viewsets.ModelViewSet):
         serializer.save(patient=self.request.user.patient)
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def health_check(request):
     return Response({"status": "ok"}, status=status.HTTP_200_OK)
