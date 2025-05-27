@@ -64,24 +64,17 @@ class DoctorViewSet(viewsets.ModelViewSet):
 class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
-    
-    def get_permissions(self):
-        if self.action == 'create':
-            return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        try:
-            patient = serializer.save()
-            # Create notifications for assigned doctors
-            for doctor in patient.assigned_doctors.all():
-                DoctorNotification.objects.create(
-                    doctor=doctor,
-                    patient=patient,
-                    is_new_patient=True
-                )
-        except Exception as e:
-            raise serializers.ValidationError(str(e))
+        patient = serializer.save()
+        # Create notifications for assigned doctors
+        for doctor in patient.assigned_doctors.all():
+            DoctorNotification.objects.create(
+                doctor=doctor,
+                patient=patient,
+                is_new_patient=True
+            )
 
     def get_queryset(self):
         user = self.request.user
@@ -118,39 +111,28 @@ class HealthRecordViewSet(viewsets.ModelViewSet):
         return HealthRecord.objects.none()
 
     def perform_create(self, serializer):
-        try:
-            user = self.request.user
-            if not hasattr(user, 'doctor') and not hasattr(user, 'patient'):
-                raise permissions.PermissionDenied("User must be either a doctor or patient")
-
-            if hasattr(user, 'doctor'):
-                # If user is a doctor, get patient from request data
-                patient_id = self.request.data.get('patient')
-                if not patient_id:
-                    raise serializers.ValidationError({"patient": "Patient ID is required for doctors"})
-                
-                try:
-                    patient = Patient.objects.get(id=patient_id)
-                except Patient.DoesNotExist:
-                    raise serializers.ValidationError({"patient": f"Patient with ID {patient_id} does not exist"})
-                
-                # Verify doctor has access to this patient
-                if not user.doctor.patients.filter(id=patient.id).exists():
-                    raise permissions.PermissionDenied(
-                        f"You don't have permission to create records for patient {patient_id}. "
-                        f"Your assigned patients are: {list(user.doctor.patients.values_list('id', flat=True))}"
-                    )
-                
-                serializer.save(patient=patient)
-            else:  # user is a patient
-                # If user is a patient, use their own patient record
-                serializer.save(patient=user.patient)
-        except serializers.ValidationError as e:
-            raise e
-        except permissions.PermissionDenied as e:
-            raise e
-        except Exception as e:
-            raise serializers.ValidationError(f"Error creating health record: {str(e)}")
+        user = self.request.user
+        if hasattr(user, 'doctor'):
+            # If user is a doctor, get patient from request data
+            patient_id = self.request.data.get('patient')
+            if not patient_id:
+                raise serializers.ValidationError({"patient": "Patient ID is required for doctors"})
+            
+            try:
+                patient = Patient.objects.get(id=patient_id)
+            except Patient.DoesNotExist:
+                raise serializers.ValidationError({"patient": f"Patient with ID {patient_id} does not exist"})
+            
+            # Verify doctor has access to this patient
+            if patient not in user.doctor.patients.all():
+                raise permissions.PermissionDenied("You don't have permission to create records for this patient")
+            
+            serializer.save(patient=patient)
+        elif hasattr(user, 'patient'):
+            # If user is a patient, use their own patient record
+            serializer.save(patient=user.patient)
+        else:
+            raise permissions.PermissionDenied("You don't have permission to create health records")
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
