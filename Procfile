@@ -1,1 +1,2 @@
-web: gunicorn health_records.wsgi 
+web: gunicorn health_records.wsgi
+release: python manage.py migrate 
