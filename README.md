@@ -144,6 +144,7 @@ health_records/
 ## Production Deployment (Railway)
 1. Database: PostgreSQL on Railway
 
+👉 [Hosted API Documentation](https://docs.google.com/document/d/1qvkRlQdMK_NVqnP8O6Dy-wbPF8nd0U27bByRjDVO5iY/edit?tab=t.0)
 
 
 ## Future Improvements in mind
